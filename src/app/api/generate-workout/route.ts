@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geminiPro } from "@/lib/gemini";
+import { genAI } from "@/lib/gemini";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,30 +13,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isMohamed =
+      profile.email?.toLowerCase() === "mohamed.douazi@outlook.com" ||
+      profile.firstName?.toLowerCase().includes("med") ||
+      profile.firstName?.toLowerCase().includes("mohamed");
+
     const goalDescription =
       profile.goal === "perte_poids_muscle"
-        ? "Perte de poids + construction musculaire (recomposition corporelle, déficit calorique)"
+        ? "Perte de poids + construction musculaire (sèche agressive, 1500 kcal, maintien de la force)"
         : "Prise de masse musculaire (surplus calorique, hypertrophie maximale)";
 
-    // Determine Sunday-specific rules
-    let sundayRule = "";
-    if (dayOfWeek === "sunday") {
-      if (profile.goal === "perte_poids_muscle") {
-        sundayRule = `
-RÈGLE DIMANCHE SPÉCIALE : C'est une séance "Full Cardio" d'exactement 1 heure.
-L'objectif STRICT est de brûler au minimum 800 calories.
-Structure la séance avec du HIIT, du cardio sur machines (tapis de course, vélo, rameur, elliptique) 
-et des exercices au poids de corps à haute intensité. Pas de musculation lourde.`;
-      } else {
-        sundayRule = `
-RÈGLE DIMANCHE SPÉCIALE : Séance d'hypertrophie MAXIMALE ciblant les JAMBES en priorité 
-puis l'ensemble des muscles. Volume élevé, temps sous tension maximal, techniques d'intensification 
-(drop sets, rest-pause, supersets). Durée : 1h30 minimum.`;
-      }
+    // Specific rules per day for Mohamed's routine
+    let daySpecificRule = "";
+    if (dayOfWeek === "friday") {
+      daySpecificRule = `
+RÈGLE OFFICIELLE VENDREDI : C'est une séance "Full Cardio" d'exactement 1 heure en DUO (18h00).
+L'objectif STRICT est de brûler au minimum 800 calories (fractionné, HIIT, tapis de course incliné, rameur Concept2, SkiErg, vélo elliptique).
+Pas de musculation lourde ce jour-là, pure intensité cardiovasculaire pour cramer 800 kcal.`;
+    } else if (dayOfWeek === "sunday") {
+      daySpecificRule = `
+RÈGLE OFFICIELLE DIMANCHE : C'est une séance "Upper Body" (Haut du corps) en DUO (10h00).
+Cible : Pectoraux, Dos lourd (Rowing / Tirages), Épaules et Bras (Biceps/Triceps).
+Garde un programme fixe de référence basé sur des mouvements polyarticulaires solides.`;
+    } else if (dayOfWeek === "saturday") {
+      daySpecificRule = `
+RÈGLE OFFICIELLE SAMEDI : C'est une séance "Lower Body" (Bas du corps) en DUO (10h00).
+Cible : Quadriceps (Squat/Presse), Ischios (Leg curl/SDT roumain), Mollets.`;
+    } else if (dayOfWeek === "tuesday") {
+      daySpecificRule = `
+RÈGLE MARDI : Séance "Push" (Pectoraux, Épaules ant/lat, Triceps).`;
+    } else if (dayOfWeek === "wednesday") {
+      daySpecificRule = `
+RÈGLE MERCREDI : Séance "Pull" (Dos, Arrière d'épaules, Biceps). Focus sur le travail lourd au dos.`;
+    } else if (dayOfWeek === "thursday") {
+      daySpecificRule = `
+RÈGLE JEUDI : Séance "Legs" (Quadriceps, Ischios, Mollets, Fessiers).`;
+    } else if (dayOfWeek === "monday") {
+      daySpecificRule = `
+ATTENTION : Lundi est le jour de REPOS complet. Propose uniquement des étirements doux ou de la mobilité pour la récupération.`;
     }
 
-    const prompt = `Tu es un coach de musculation expert spécialisé dans les salles Fitness Park. 
-Tu programmes des séances pour des athlètes adolescents/jeunes adultes.
+    const mohamedPerfsContext = isMohamed
+      ? `
+PERFORMANCES ACTUELLES DE MOHAMED (À utiliser comme référence exacte pour les charges) :
+- Développé couché : 50 kg (3x5 reps validées)
+- Rowing haltère : 22 à 24 kg
+- Tirage poitrine (lat pulldown) : 50 à 55 kg
+- Focus absolu sur l'exécution contrôlée et la surcharge progressive.`
+      : "";
+
+    const prompt = `Tu es un coach de musculation expert pour les salles Fitness Park.
+Tu conçois une routine d'entraînement fixe, éprouvée et solide pour un athlète régulier.
 
 PROFIL DE L'ATHLÈTE :
 - Prénom : ${profile.firstName}
@@ -45,57 +72,58 @@ PROFIL DE L'ATHLÈTE :
 - Taille : ${profile.height} cm
 - Objectif : ${goalDescription}
 - Blessures : ${profile.injuries || "Aucune"}
-- Niveau de fatigue aujourd'hui : ${fatigueLevel || "Normal"}/10
+- Niveau de fatigue : ${fatigueLevel || 5}/10
+${mohamedPerfsContext}
 
-JOUR : ${dayOfWeek}
-${sundayRule}
+JOUR DE LA SEMAINE : ${dayOfWeek}
+${daySpecificRule}
 
-${dayOfWeek === "monday" ? "ATTENTION : C'est le jour de REPOS. Propose uniquement des étirements/mobilité légers et des conseils de récupération." : ""}
+MATÉRIEL DISPONIBLE : ${(availableEquipment || []).join(", ") || "Tout le matériel Fitness Park standard (poulies, haltères, barres olympiques, machines guidées)"}
 
-MATÉRIEL DISPONIBLE : ${(availableEquipment || []).join(", ") || "Tout le matériel Fitness Park standard"}
+HISTORIQUE RÉCENT :
+${previousWorkouts ? JSON.stringify(previousWorkouts, null, 2) : "Création de la routine fixe de référence"}
 
-HISTORIQUE RÉCENT (dernières séances) :
-${previousWorkouts ? JSON.stringify(previousWorkouts, null, 2) : "Pas d'historique disponible"}
-
-Génère le programme d'entraînement du jour au format JSON :
+INSTRUCTION CRUCIALE :
+Génère une séance fixe, structurée et standardisée qui servira de routine permanente pour ce jour de la semaine.
+Format JSON requis :
 
 {
-  "splitType": "push | pull | legs | upper | lower | cardio | rest | full_body",
-  "title": "Titre court et motivant de la séance",
+  "splitType": "push | pull | legs | upper | lower | cardio | rest",
+  "title": "Titre précis de la séance",
   "targetMuscles": ["muscles ciblés"],
-  "estimatedDuration": "durée en minutes",
-  "estimatedCalories": "estimation kcal brûlées",
+  "estimatedDuration": "durée en minutes (ex: 60 ou 75)",
+  "estimatedCalories": "estimation kcal (ex: 800 pour le vendredi)",
   "warmup": {
     "duration": "5-10 min",
-    "exercises": ["exercice 1", "exercice 2"]
+    "exercises": ["exercice échauffement 1", "exercice échauffement 2"]
   },
   "exercises": [
     {
-      "name": "Nom de l'exercice",
-      "muscleGroup": "groupe musculaire principal",
+      "name": "Nom précis de l'exercice Fitness Park",
+      "muscleGroup": "groupe musculaire",
       "sets": 4,
-      "reps": "8-12",
+      "reps": "6-8 ou 8-12",
       "restSeconds": 90,
-      "weight": "suggestion de charge ou % du max",
-      "technique": "conseil d'exécution",
-      "alternatives": ["alternative si machine prise"]
+      "weight": "charge recommandée (ex: 50 kg)",
+      "technique": "consigne technique essentielle",
+      "alternatives": ["alternative machine si occupée"]
     }
   ],
   "cooldown": {
-    "duration": "5-10 min",
+    "duration": "5 min",
     "exercises": ["étirement 1", "étirement 2"]
   },
-  "coachNote": "message de motivation et conseil du jour"
+  "coachNote": "consigne directe et motivante du coach"
 }
 
-RÈGLES :
-- Applique la surcharge progressive si l'historique est disponible (+2.5% de charge ou +1-2 reps).
-- Exclue les exercices dangereux pour les blessures signalées.
-- Alterne les splits de façon optimale sur la semaine (Mardi-Dimanche, Lundi = repos).
-- Chaque exercice doit utiliser du matériel Fitness Park spécifiquement.
-- Réponds UNIQUEMENT avec le JSON.`;
+Réponds UNIQUEMENT avec le JSON valide.`;
 
-    const result = await geminiPro.generateContent(prompt);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3.6-flash",
+      generationConfig: { responseMimeType: "application/json" },
+    });
+
+    const result = await model.generateContent(prompt);
     const text = result.response.text();
 
     let workout;
@@ -103,9 +131,10 @@ RÈGLES :
       const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
       const jsonString = jsonMatch ? jsonMatch[1].trim() : text.trim();
       workout = JSON.parse(jsonString);
-    } catch {
+    } catch (parseErr) {
+      console.error("JSON parse error:", text);
       return NextResponse.json(
-        { error: "Erreur de parsing de la réponse IA." },
+        { error: "Erreur de format de la réponse IA." },
         { status: 500 }
       );
     }

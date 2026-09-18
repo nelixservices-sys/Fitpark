@@ -27,12 +27,30 @@ export async function uploadProgressPhoto(
   file: File,
   label: string
 ): Promise<string> {
-  const timestamp = Date.now();
-  const extension = file.name.split(".").pop() || "jpg";
-  const path = `users/${uid}/progress/${timestamp}_${label}.${extension}`;
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return getDownloadURL(storageRef);
+  return uploadProgressPhotoWithFallback(uid, file, label);
+}
+
+export async function uploadProgressPhotoWithFallback(
+  uid: string,
+  file: File,
+  label: string
+): Promise<string> {
+  try {
+    const timestamp = Date.now();
+    const extension = file.name.split(".").pop() || "jpg";
+    const path = `users/${uid}/progress/${timestamp}_${label}.${extension}`;
+    const storageRef = ref(storage, path);
+    const compressed = await compressImage(file, 1000, 0.75);
+    await uploadBytes(storageRef, compressed);
+    return await getDownloadURL(storageRef);
+  } catch (err) {
+    console.warn("Storage upload failed, using high-compression data URL fallback:", err);
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 export async function uploadFormCheckVideo(
@@ -65,7 +83,7 @@ export async function uploadFormCheckVideo(
 }
 
 // Image compression utility
-async function compressImage(
+export async function compressImage(
   file: File,
   maxWidth: number,
   quality: number

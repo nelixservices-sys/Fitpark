@@ -48,10 +48,12 @@ export default function DashboardPage() {
       label: "Split du jour",
       value: todaySchedule.isRestDay
         ? "Repos 😴"
-        : getSplitEmoji(todaySchedule.splitType) +
-          " " +
-          todaySchedule.splitType.charAt(0).toUpperCase() +
-          todaySchedule.splitType.slice(1),
+        : `${getSplitEmoji(todaySchedule.splitType)} ${
+            todaySchedule.splitType === "cardio"
+              ? "Full Cardio"
+              : todaySchedule.splitType.charAt(0).toUpperCase() +
+                todaySchedule.splitType.slice(1)
+          }`,
       color: "from-accent-purple to-accent-purple-light",
     },
     {

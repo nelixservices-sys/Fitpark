@@ -150,7 +150,7 @@ export default function SchedulePage() {
         })}
       </div>
 
-      {/* Sunday Rules Info */}
+      {/* Key Sessions Rules Info */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -159,19 +159,19 @@ export default function SchedulePage() {
       >
         <h3 className="font-semibold mb-3 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-accent-purple-light" />
-          Règles du Dimanche
+          Séances Clés de la Semaine
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-3 rounded-xl bg-accent-rose/5 border border-accent-rose/15">
-            <p className="font-semibold text-sm text-accent-rose">🔥 Med</p>
+            <p className="font-semibold text-sm text-accent-rose">🔥 Vendredi — Duo à 18h00 (Med & Riri)</p>
             <p className="text-xs text-text-secondary mt-1">
-              Full Cardio 1h — Objectif strict : brûler 800+ kcal (HIIT, tapis, rameur, elliptique)
+              Full Cardio 1h — Objectif strict : brûler 800+ kcal ensemble (HIIT, tapis incliné, rameur, skierg). Fin de semaine explosive.
             </p>
           </div>
           <div className="p-3 rounded-xl bg-accent-cyan/5 border border-accent-cyan/15">
-            <p className="font-semibold text-sm text-accent-cyan">⚡ Riri</p>
+            <p className="font-semibold text-sm text-accent-cyan">💪 Dimanche — Duo à 10h00 (Upper Body)</p>
             <p className="text-xs text-text-secondary mt-1">
-              Hypertrophie maximale — Focus jambes + ensemble des muscles. Drop sets, rest-pause, supersets.
+              Upper Body complet en duo — Pecs, Dos lourd (Rowing/Tirages), Épaules & Bras. Focus sur la surcharge progressive.
             </p>
           </div>
         </div>
